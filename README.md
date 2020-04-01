@@ -45,7 +45,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/Laisky/graphql"
+	"github.com/jcasado94/graphql"
 )
 
 type gcpLockQuery struct {

@@ -8,7 +8,7 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/Laisky/graphql/internal/jsonutil"
+	"github.com/jcasado94/graphql/internal/jsonutil"
 )
 
 var (
