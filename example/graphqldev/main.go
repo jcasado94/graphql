@@ -73,7 +73,7 @@ func run() error {
 	variables := map[string]interface{}{
 		"characterID": graphql.ID("1003"),
 	}
-	err = client.Query(context.Background(), &q, variables)
+	err = client.Query(context.Background(), &q, variables, false)
 	if err != nil {
 		return err
 	}

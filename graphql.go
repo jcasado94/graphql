@@ -66,19 +66,20 @@ func NewClient(url string, httpClient *http.Client, opts ...ClientOptFunc) (c *C
 // Query executes a single GraphQL query request,
 // with a query derived from q, populating the response into it.
 // q should be a pointer to struct that corresponds to the GraphQL schema.
-func (c *Client) Query(ctx context.Context, q interface{}, variables map[string]interface{}) error {
-	return c.do(ctx, queryOperation, q, variables)
+// if forcePost, then the query is send via POST method, GET otherwise.
+func (c *Client) Query(ctx context.Context, q interface{}, variables map[string]interface{}, forcePost bool) error {
+	return c.do(ctx, queryOperation, q, variables, forcePost)
 }
 
 // Mutate executes a single GraphQL mutation request,
 // with a mutation derived from m, populating the response into it.
 // m should be a pointer to struct that corresponds to the GraphQL schema.
 func (c *Client) Mutate(ctx context.Context, m interface{}, variables map[string]interface{}) error {
-	return c.do(ctx, mutationOperation, m, variables)
+	return c.do(ctx, mutationOperation, m, variables, true)
 }
 
 // do executes a single GraphQL operation.
-func (c *Client) do(ctx context.Context, op operationType, v interface{}, variables map[string]interface{}) (err error) {
+func (c *Client) do(ctx context.Context, op operationType, v interface{}, variables map[string]interface{}, post bool) (err error) {
 	var query string
 	switch op {
 	case queryOperation:
@@ -93,22 +94,7 @@ func (c *Client) do(ctx context.Context, op operationType, v interface{}, variab
 		req  *http.Request
 		resp *http.Response
 	)
-	switch op {
-	case queryOperation:
-		if req, err = http.NewRequest("GET", c.url, nil); err != nil {
-			return err
-		}
-
-		var buf bytes.Buffer
-		err := json.NewEncoder(&buf).Encode(variables)
-		if err != nil {
-			return err
-		}
-		q := req.URL.Query()
-		q.Add("query", query)
-		q.Add("variables", buf.String())
-		req.URL.RawQuery = q.Encode()
-	case mutationOperation:
+	if post {
 		in := struct {
 			Query     string                 `json:"query"`
 			Variables map[string]interface{} `json:"variables,omitempty"`
@@ -124,6 +110,20 @@ func (c *Client) do(ctx context.Context, op operationType, v interface{}, variab
 		if req, err = http.NewRequest("POST", c.url, &buf); err != nil {
 			return err
 		}
+	} else {
+		if req, err = http.NewRequest("GET", c.url, nil); err != nil {
+			return err
+		}
+
+		var buf bytes.Buffer
+		err := json.NewEncoder(&buf).Encode(variables)
+		if err != nil {
+			return err
+		}
+		q := req.URL.Query()
+		q.Add("query", query)
+		q.Add("variables", buf.String())
+		req.URL.RawQuery = q.Encode()
 	}
 
 	// set cookies and headers
